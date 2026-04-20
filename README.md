@@ -8,7 +8,7 @@
 |---|---|
 | **Judul** | Tile Blast |
 | **Genre** | Puzzle / Strategi |
-| **Platform** | Android, iOS, Web |
+| **Platform** | Android, Web |
 | **Engine** | React Native (Expo SDK 52) |
 | **Target Pemain** | Gamer kasual, usia 8+ |
 | **Monetisasi** | Gratis (TBD: Iklan / Premium) |
