@@ -8,8 +8,8 @@
 |---|---|
 | **Judul** | Tile Blast |
 | **Genre** | Puzzle / Strategi |
-| **Platform** | Android, Web |
-| **Engine** | React Native (Expo SDK 52) |
+| **Platform** | Android |
+| **Engine** | Native Java (Android SDK) |
 | **Target Pemain** | Gamer kasual, usia 8+ |
 | **Monetisasi** | Gratis (TBD: Iklan / Premium) |
 | **Package ID** | `com.allan.tileblast` |
@@ -84,7 +84,7 @@ Setiap potongan diberi **warna acak** dari palet berikut:
 | Biru Muda | (31, 165, 222) | `#1FA5DE` | 🔵 |
 
 ### Rendering Blok
-Setiap blok menampilkan **border 3D beveled** yang dihitung secara dinamis:
+Setiap blok menampilkan **border 3D beveled** yang dihitung secara dinamis langsung pada Canvas:
 - **Border atas**: Lebih terang (highlight)
 - **Border kiri**: Sedikit lebih terang
 - **Border kanan**: Lebih gelap
@@ -96,7 +96,7 @@ Setiap blok menampilkan **border 3D beveled** yang dihitung secara dinamis:
 
 ### 1. Sistem Tangan (Hand)
 - Pemain menerima tangan berisi potongan (**3** di Classic, **5** di Chaos)
-- Potongan harus ditempatkan **satu per satu** dengan drag-and-drop
+- Potongan harus ditempatkan **satu per satu** dengan menahan layar (Touch Event)
 - Ketika **semua potongan** di tangan sudah ditempatkan, **tangan acak baru** dibagikan
 - Potongan **tidak bisa diputar** — harus ditempatkan apa adanya
 
@@ -104,7 +104,7 @@ Setiap blok menampilkan **border 3D beveled** yang dihitung secara dinamis:
 - Potongan hanya bisa ditempatkan di **sel grid yang kosong**
 - Seluruh potongan harus muat dalam batas grid
 - **Zona drop yang valid** ditandai saat menyeret potongan
-- Penempatan tidak valid akan mengembalikan potongan ke tangan
+- Penempatan tidak valid akan mengembalikan potongan ke tangan bebas
 
 ### 3. Penghancuran Baris/Kolom
 - Sebuah **baris** dihapus ketika semua sel di baris tersebut terisi
@@ -114,12 +114,12 @@ Setiap blok menampilkan **border 3D beveled** yang dihitung secara dinamis:
 
 ### 4. Preview Hover
 Saat menyeret potongan di atas grid:
-- **Penempatan valid**: Blok di-preview dengan **opacity 30%**
+- **Penempatan valid**: Blok di-preview langsung menggunakan perhitungan posisi dengan **opacity 30%**
 - **Preview penghancuran baris**: Jika penempatan akan menyelesaikan baris, sel-sel tersebut **bersinar dengan warna potongan** (efek elevated)
-- **Border grid**: Berubah warna sesuai potongan yang sedang diseret
+- **Border grid**: Berubah warna meniru pinggiran potongan yang sedang diseret
 
 ### 5. Game Over
-Game berakhir ketika **tidak ada potongan di tangan** yang bisa ditempatkan di manapun di papan. Pengecekan otomatis dilakukan setelah setiap penempatan.
+Game berakhir ketika **tidak ada potongan di tangan** yang bisa ditempatkan di manapun di papan. Pengecekan otomatis dilakukan setelah setiap penempatan blok sukses.
 
 ---
 
@@ -162,44 +162,38 @@ Bonus Baris = (baris_dihancurkan × panjang_papan × 10) × pengali_combo
 | Suara | Pemicu | File |
 |---|---|---|
 | `PLACE` | Potongan ditempatkan di papan | `place.mp3` |
-| `BREAK` | Penghancuran baris tunggal (tanpa combo) | `break.mp3` |
+| `BREAK` | Penghancuran baris tunggal (tanpa combo) | `break_.mp3` |
 | `COMBO1-5` | Level combo 2-6+ | `combo1.mp3` — `combo5.mp3` |
 | `JUICINESS` | Combo ×4+ atau 3+ baris dihancurkan sekaligus | `Juiciness.mp3` |
 | `GAMEOVER` | Game over terpicu | `gameover.mp3` |
 
 ### Kontrol Volume
-- Volume dikontrol melalui `volumeAtom` global (state Jotai)
-- Dapat disesuaikan dari menu Opsi
+- Volume dikontrol lalu disetting secara internal dengan sistem `SoundPool` volume control
+- Disimpan menggunakan `SharedPreferences`
 
 ### Feedback Haptic
-- Getaran **impact ringan** di perangkat native saat potongan berhasil ditempatkan
-- Tidak ada haptic di web
+- Menggunakan `Vibrator` Service bawaan Android
+- Getaran **impact ringan (30 milidetik)** di perangkat saat potongan berhasil ditempatkan. Opsi Amplitude standar bila Native Support Vibrator OS >= versi O API (Build.VERSION_CODES.O).
 
 ---
 
 ## 🎨 Desain Visual
 
 ### Tema
-- **Tema luar angkasa gelap** dengan latar belakang hitam
-- Blok berwarna-warni dengan efek kedalaman 3D (beveled)
-- Efek bersinar pada preview penghancuran baris
+- **Tema luar angkasa gelap** dengan latar belakang murni warna `#000000`
+- Blok berwarna-warni dengan efek kedalaman 3D (beveled Canvas rendering)
+- Efek bersinar pada preview penghancuran baris (merubah alpha / transparansi di canvas)
 
 ### Tipografi
 | Font | Penggunaan |
 |---|---|
-| `Silkscreen` | Skor, teks UI, tombol |
-| `SilkscreenBold` | Judul, teks combo, header pause/game over |
-
-### Partikel Latar Belakang
-- Bentuk potongan mengambang dengan animasi di latar belakang (hanya di menu)
-- 8 partikel dengan efek fade-in/fade-out dan gerakan melayang
-- Dinonaktifkan saat bermain untuk performa
+| `Silkscreen` | Teks keterangan dan High Scores |
+| `SilkscreenBold` | Judul, skor berjalan, menu utama, overlay pause |
 
 ### Feedback UI
-- **Guncangan layar** saat baris dihancurkan (intensitas sesuai jumlah baris)
-- **Ledakan partikel** di sepanjang baris/kolom yang dihapus
-- **Overlay combo** dengan animasi masuk/keluar ("COMBO x3!")
-- **Warna border grid** mengikuti warna potongan yang diseret
+- **Guncangan layar (Screen Shake)** saat baris dihancurkan (intensitas shake mengikuti skala baris + translasi sumbu x & y)
+- **Overlay combo** dengan animasi perlahan menghilang (fade-out di render cycle)
+- **Warna border grid** mengikuti warna keping yang disentuh.
 
 ---
 
@@ -208,96 +202,79 @@ Bonus Baris = (baris_dihancurkan × panjang_papan × 10) × pengali_combo
 ```
 ┌─────────────────┐
 │   MENU UTAMA     │
+│  (MainActivity)  │
 │                  │
 │  [Mode Classic]  │
 │  [Mode Chaos]    │
 │  [Skor Tertinggi]│
-│  [Opsi]          │
 └───────┬──────────┘
         │
-   ┌────▼────┐
-   │  GAME   │
-   │         │
-   │  HUD    │ ← Skor, Combo, Statistik
-   │  GRID   │ ← 8×8 atau 10×10
-   │  TANGAN │ ← 3 atau 5 potongan
-   │         │
-   │  [||]   │ ← Tombol Pause
-   └────┬────┘
+   ┌────▼─────────────┐
+   │  GAME            │
+   │ (GameActivity)   │
+   │                  │
+   │  HUD             │ ← Skor, Combo, Statistik
+   │  GRID (Canvas)   │ ← 8×8 atau 10×10
+   │  TANGAN          │ ← 3 atau 5 potongan
+   │                  │
+   │  [II]            │ ← Tombol Pause (Klik via Koordinat)
+   └────┬─────────────┘
         │
    ┌────▼─────────┐     ┌──────────────┐
    │    DIJEDA     │     │  GAME OVER   │
-   │               │     │              │
+   │   (Overlay)   │     │  (Overlay)   │
    │  [Lanjut]     │     │ Skor Akhir   │
-   │  [Opsi]       │     │ [Kembali]    │
-   │  [Keluar]     │     └──────────────┘
-   └───────────────┘
+   │  [Keluar]     │     │ [Beranda]    │
+   └───────────────┘     └──────────────┘
 ```
 
 ### Menu Utama
-- Logo game dengan animasi bounce-in
-- Tombol pilihan mode dengan gradien dan teks deskripsi
-- Partikel potongan mengambang di latar belakang
-- Footer versi/kredit
+- Pengaturan layout berbasis `XML Layout` bebas dari logic rumit.
+- Desain *Clean* dan memikat
 
 ### HUD Dalam Game
-- **Atas**: Skor saat ini (angka animasi), indikator skor tertinggi
-- **Tengah**: Grid permainan
-- **Bawah**: Potongan tangan (preview yang diperkecil)
-- **Kanan atas**: Tombol pause
-
-### Menu Opsi
-- Pengatur volume
-- Tombol kembali
+- Langsung digambar bersama frame (dalam `onDraw` loop).  Tidak ada tumpukan Layout berlebih.
+- Berisi skor pemain sementara & high score di background gelap tembus pandang.
 
 ### Skor Tertinggi
-- Papan peringkat per-mode
-- Disimpan secara lokal via AsyncStorage
-- Menampilkan skor + tanggal
+- Tampil dengan Activity sendiri (`HighScoreActivity`) memisahkan tabel klasemen.
+- Mode skor terbanyak dimunculkan 10 besarnya.
 
 ---
 
 ## 💾 Penyimpanan Data
 
 ### Teknologi
-- **AsyncStorage** (React Native) untuk penyimpanan lokal
-- Setiap sesi game membuat entri **UUID** unik
-- Skor diperbarui secara real-time selama bermain
+- **SharedPreferences** bawaan framework Android. Cepat, aman, persistensi kuat, performa handal.
 
-### Skema Data
-```typescript
-interface HighScore {
-    score: number;      // Skor akhir
-    date: number;       // Timestamp (milidetik)
-    type: GameModeType; // "Classic" atau "Chaos"
+### Skema Data (JSON Text via SharedPreferences)
+```java
+public class HighScore {
+    public int score;        // Skor akhir
+    public long date;        // Tanggal (milidetik datetime unix)
+    public String mode;      // "classic" atau "chaos"
 }
 ```
 
 ### Kunci Penyimpanan
-- `HIGH_SCORES` → Array UUID yang mengarah ke entri skor individual
-- Setiap UUID → Objek `HighScore` yang di-serialisasi JSON
+- `high_scores` → Kunci yang memiliki _Value_ Array Data Objek `HighScore` (di-Serialize format JSON String)
+- `volume` → State float penyimpanan musik
 
 ---
 
 ## 📱 Desain Responsif
 
 ### Ukuran Grid Dinamis
-```typescript
+Dihitung matang setiap *viewport layar* berubah (`calculateLayout()`):
+```java
 ukuranBlok = min(
-    (lebarLayar - 40) / panjangPapan,    // Sesuai lebar
-    (tinggiLayar - 300) / panjangPapan,  // Sesuai tinggi
-    46                                    // Batas maksimum
+    (lebarLayar - 40) / panjangPapan,       // Sesuai lebar layar
+    (tinggiLayar - 300) / panjangPapan,     // Sesuai tinggi dengan headroom HUD dan tangan
+    46 * 3                                  // Capping kepadatan maksimum Pixel
 )
 ```
 
-- Grid otomatis menyesuaikan untuk ukuran layar apapun
-- Potongan tangan menyesuaikan secara proporsional (50% dari ukuran blok grid)
-- Mendengarkan event resize layar (perubahan orientasi, dll.)
-
-### Resolusi yang Didukung
-- HP: lebar 320px — 430px
-- Tablet: lebar 768px — 1024px
-- Desktop: lebar 1024px+
+- Responsif dan proporsional untuk semua resolusi (DPI) maupun lebar tablet/Handphone. Hand block adalah 45% skala `blockSize` grid aslinya.
 
 ---
 
@@ -306,64 +283,51 @@ ukuranBlok = min(
 ### Stack Teknologi
 | Lapisan | Teknologi |
 |---|---|
-| Framework | React Native 0.76 + Expo SDK 52 |
-| Routing | Expo Router |
-| State | Jotai (atoms) + Reanimated SharedValues |
-| Animasi | React Native Reanimated 3 |
-| Drag & Drop | `@mgcrea/react-native-dnd` |
-| Haptic | `expo-haptics` |
-| Audio | `expo-av` |
-| Penyimpanan | `@react-native-async-storage/async-storage` |
-| Kriptografi | `expo-crypto` (pembuatan UUID) |
+| Platform | Android Native |
+| Bahasa | Java |
+| Build System | Gradle KTS |
+| Rendering Interface | `GameView.java` extend View class (Canvas Engine) |
+| Drag & Drop | Kalkulasi `TouchEvent` Manual (Posisi Sentuhan ke Titik Kotak Matrix) |
+| Haptic | `Vibrator` |
+| Audio | Android `SoundPool` |
+| Penyimpanan | `SharedPreferences` |
 
 ### Modul Utama
-| File | Tanggung Jawab |
+| File (`/com/allan/tileblast`) | Tanggung Jawab |
 |---|---|
-| `app/index.tsx` | Entry point, pemuatan font, routing layar |
-| `components/game/Game.tsx` | Game loop inti, skor, penanganan drag-and-drop |
-| `components/game/BlockGrid.tsx` | Rendering grid dengan style blok animasi |
-| `components/game/HandPieces.tsx` | Tampilan tangan dengan potongan yang bisa diseret |
-| `components/game/GameHud.tsx` | HUD skor dan combo |
-| `constants/Board.tsx` | Logika papan, deteksi baris, preview hover |
-| `constants/Piece.tsx` | Definisi potongan, warna, rendering blok |
-| `constants/Hand.tsx` | Pembuatan tangan |
-| `constants/Color.tsx` | Utilitas warna (HSL, RGB, konversi hex) |
-| `constants/Audio.ts` | Manajer audio (pola singleton) |
-| `constants/Storage.tsx` | CRUD skor tertinggi dengan AsyncStorage |
+| `MainActivity.java` | Pengelola menu utama & layout awal. Menampung navigasi intent |
+| `GameActivity.java` | Host `GameView`, penjaga rotasi, controller UI lock dan BackPress |
+| `game/GameView.java` | **Jantung Game**. Pengelolaan visual grid, potongan drak, loop rendering animasi & UI |
+| `game/Board.java` | Matrix logic papan grid, tabrakan, check baris tembus penuh, & array index. |
+| `game/Piece.java` | Penyedia data statik cetakan pola matrix, daftar warna, hingga penyesuaian bayangan grid render 3D per keping blok. |
+| `game/Hand.java` | Pengatur isi keping potongan yang dioper pemain |
+| `game/ScoreManager.java` | Penghitung poin berjalan dan trigger *Combo multipliers*. |
+| `audio/AudioManager.java` | Loader `.mp3` resource dan *low latency playback*. Caching Suara menggunakan `SoundPool`|
+| `storage/StorageManager.java` | Penyimpan dan Pembaca (Retrieve) skor dan status JSON Array |
 
-### Optimisasi Performa
-- Style blok grid dihitung di **UI thread** (worklets)
-- Deteksi tabrakan berjalan sebagai worklet (tanpa panggilan JS bridge)
-- Partikel latar belakang dinonaktifkan saat bermain
-- Penghitungan ulang layout hanya saat state berubah (bukan per-frame)
-- React.memo pada komponen partikel
+### Optimisasi Performa Terkini
+- **Single Canvas Render**: Alih-alih ratusan blok elemen sistem view / dom, Frame Digambar secara efisien dalam `onDraw()`.
+- **Pengurangan Object Creation**: Blok warna, *alpha channels*, dan perhitungan ukuran tidak dialokasikan di dalam `Loop`. Array Boolean Re-usability untuk mendeteksi *Match* tanpa membebani _Garbage Collector_ (Memory Profiling sangat sehat).
+- **Zero Overhead Touch Drag**: Memanajemen indeks satu `Touch` jari dengan sinkronisasi akurasi letak presisi grid.
 
 ---
 
 ## 🗺️ Peta Jalan Pengembangan
 
 ### v1.1 — Peningkatan
-- [ ] Mode Tantangan Harian (puzzle dengan seed)
-- [ ] Undo langkah terakhir (penggunaan terbatas)
-- [ ] Opsi rotasi potongan
-- [ ] Sistem pencapaian (achievement)
-- [ ] Kustomisasi tema (warna, latar belakang)
+- [ ] Fitur Rotasi Keping (Bonus poin in-game purchase/item limit)
+- [ ] Opsi mengulang Langkah terakhir (Undo)
+- [ ] Mode Tantangan Harian (seed game generator harian)
 
 ### v1.2 — Sosial
-- [ ] Papan peringkat online (Firebase)
-- [ ] Bagikan skor sebagai gambar
-- [ ] Tantangan antar teman
+- [ ] Google Play Games Services Leaderboard
+- [ ] Share skor dalam bentuk gambar
+- [ ] Capaian / *Achievements* unlock
 
-### v1.3 — Monetisasi
-- [ ] Iklan berhadiah untuk undo ekstra
-- [ ] Tema kosmetik premium
-- [ ] Hapus iklan (pembelian sekali)
-
-### v2.0 — Mode Baru
-- [ ] Mode Waktu (kejar waktu)
-- [ ] Mode Zen (tanpa game over, relaksasi)
-- [ ] Mode Battle (kompetitif 1v1)
-- [ ] Mode Puzzle (tantangan yang sudah ditentukan)
+### v1.3 — Monetisasi & Tema
+- [ ] Admob Rewarded untuk item `Undo`.
+- [ ] Tema visual latar belakang (*Skin kosmetik game*)
+- [ ] Pembelian IAP hapus iklan.
 
 ---
 
@@ -371,10 +335,11 @@ ukuranBlok = min(
 
 | Peran | Nama |
 |---|---|
-| Pengembang | Allan |
-| Engine | React Native + Expo |
+| Pengembang Utama | Allan |
+| Engine | Android Custom View Canvas / Java |
+| Ekosistem | Gradle, OS SDK 34 |
 | Font | Silkscreen oleh Jason Kottke |
 
 ---
 
-*Versi Dokumen: 1.0 — Terakhir Diperbarui: 20 April 2026*
+*Versi Dokumen: 2.0 (Rewrite Native Java Android) — Terakhir Diperbarui: 20 April 2026*
